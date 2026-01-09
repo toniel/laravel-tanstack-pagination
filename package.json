@@ -1,0 +1,43 @@
+{
+  "name": "@toniel/laravel-tanstack-pagination",
+  "version": "0.1.0",
+  "description": "Vue 3 composables for Laravel pagination with TanStack Query",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "laravel",
+    "pagination",
+    "composable",
+    "tanstack-query"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "peerDependencies": {
+    "vue": "^3.0.0",
+    "@tanstack/vue-query": "^5.0.0"
+  },
+  "devDependencies": {
+    "@tanstack/vue-query": "^5.83.1",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vue": "^3.5.0"
+  }
+}
