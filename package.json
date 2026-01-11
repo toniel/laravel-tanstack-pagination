@@ -26,10 +26,22 @@
     "laravel",
     "pagination",
     "composable",
-    "tanstack-query"
+    "tanstack-query",
+    "headless",
+    "typescript",
+    "vue-composables",
+    "laravel-api"
   ],
-  "author": "Your Name",
+  "author": "Toniel <toniel@example.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toniel/laravel-tanstack-pagination.git"
+  },
+  "homepage": "https://github.com/toniel/laravel-tanstack-pagination#readme",
+  "bugs": {
+    "url": "https://github.com/toniel/laravel-tanstack-pagination/issues"
+  },
   "peerDependencies": {
     "vue": "^3.0.0",
     "@tanstack/vue-query": "^5.0.0"
