@@ -94,13 +94,15 @@ Main composable for handling Laravel pagination.
 | `search` | `Ref<string>` | Current search query |
 | `sortBy` | `Ref<string \| null>` | Current sort column |
 | `sortDirection` | `Ref<'asc' \| 'desc'>` | Sort direction |
-| `filters` | `ComputedRef<PaginationFilters>` | All active filters |
+| `filters` | `ComputedRef<PaginationFilters>` | All active filters (including custom filters) |
+| `customFilters` | `Ref<Record<string, any>>` | Custom filter state (for external use) |
 | `isLoading` | `Ref<boolean>` | Loading state from TanStack Query |
 | `error` | `Ref<Error \| null>` | Error state from TanStack Query |
 | `handlePageChange` | `(page: number) => void` | Change page handler |
 | `handlePerPageChange` | `(perPage: number) => void` | Change per page handler |
 | `handleSearchChange` | `(search: string) => void` | Search change handler (debounced) |
 | `handleSortChange` | `(column: string) => void` | Toggle sort on column |
+| `handleFilterChange` | `(filters: Record<string, any>) => void` | Bulk update custom filters |
 | `setFilter` | `(key: string, value: any) => void` | Add custom filter |
 | `removeFilter` | `(key: string) => void` | Remove custom filter |
 | `resetFilters` | `() => void` | Reset all filters to defaults |
@@ -256,6 +258,158 @@ npm install @toniel/laravel-tanstack-datatable
 ```
 
 See: https://www.npmjs.com/package/@toniel/laravel-tanstack-datatable
+
+## 🔍 Filtering
+
+The `usePagination` composable provides comprehensive filter management with proper state persistence across page changes.
+
+### Single Filter Operations
+
+```typescript
+const {
+  setFilter,
+  removeFilter,
+  customFilters,
+  refetch,
+} = usePagination(fetchFn, { queryKey: 'users' })
+
+// Set a single filter
+setFilter('status', 'active')
+setFilter('category', 'A')
+
+// Remove a filter
+removeFilter('status')
+
+// The query will automatically refetch when filters change
+```
+
+### Bulk Filter Operations
+
+```typescript
+const {
+  handleFilterChange,
+  customFilters,
+  refetch,
+} = usePagination(fetchFn, { queryKey: 'users' })
+
+// Bulk update multiple filters at once
+handleFilterChange({
+  status: 'active',
+  category: 'A',
+  year: '2024'
+})
+
+// Or pass partial updates (will merge with existing)
+handleFilterChange({
+  ...customFilters.value,
+  status: 'inactive'
+})
+```
+
+### Filter State Persistence
+
+Custom filters are properly included in the TanStack Query cache key, ensuring:
+- Filters persist when changing pages
+- Filters persist when changing per page
+- Correct cache invalidation on filter changes
+- Back/forward navigation works correctly
+
+```typescript
+// Filters are automatically included in queryKey
+const { filters } = usePagination(fetchFn, { queryKey: 'users' })
+
+// filters.value = { page: 1, per_page: 10, search: '', status: 'active', category: 'A' }
+```
+
+### Reset Filters
+
+```typescript
+const {
+  resetFilters,
+  customFilters,
+  search,
+  perPage,
+} = usePagination(fetchFn, { queryKey: 'users', defaultPerPage: 20 })
+
+// Reset all filters to defaults
+resetFilters()
+
+// After reset:
+// - customFilters = {}
+// - search = ''
+// - perPage = 20
+// - page = 1
+```
+
+### Example: Complex Filter Form
+
+```typescript
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { usePagination } from '@toniel/laravel-tanstack-pagination'
+
+// Filter form state (separate from composable)
+const filterForm = ref({
+  status: '',
+  category: '',
+  year: new Date().getFullYear().toString(),
+  month: '',
+})
+
+const {
+  tableData,
+  pagination,
+  customFilters,
+  setFilter,
+  removeFilter,
+  handlePageChange,
+  refetch,
+} = usePagination(
+  (filters) => axios.get('/api/transactions', { params: filters }),
+  { queryKey: 'transactions', defaultPerPage: 20 }
+)
+
+// Apply filters
+const applyFilters = () => {
+  // Clear existing custom filters first
+  if (filterForm.value.status) {
+    setFilter('status', filterForm.value.status)
+  } else {
+    removeFilter('status')
+  }
+  
+  if (filterForm.value.category) {
+    setFilter('category', filterForm.value.category)
+  } else {
+    removeFilter('category')
+  }
+  
+  if (filterForm.value.year) {
+    setFilter('year', filterForm.value.year)
+  } else {
+    removeFilter('year')
+  }
+  
+  if (filterForm.value.month) {
+    setFilter('month', filterForm.value.month)
+  } else {
+    removeFilter('month')
+  }
+  
+  refetch()
+}
+
+// Clear all filters
+const clearFilters = () => {
+  filterForm.value = { status: '', category: '', year: new Date().getFullYear().toString(), month: '' }
+  removeFilter('status')
+  removeFilter('category')
+  removeFilter('year')
+  removeFilter('month')
+  refetch()
+}
+</script>
+```
 
 ## 🔧 Laravel Backend Setup
 

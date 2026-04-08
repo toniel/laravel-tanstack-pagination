@@ -1,6 +1,6 @@
 {
   "name": "@toniel/laravel-tanstack-pagination",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Vue 3 composables for Laravel pagination with TanStack Query",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

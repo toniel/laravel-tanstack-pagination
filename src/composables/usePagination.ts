@@ -22,13 +22,15 @@ export function usePagination<T = any>(
   const search = ref(options.defaultSearch || '')
   const sortBy = ref(options.defaultSort?.column || null)
   const sortDirection = ref<'asc' | 'desc'>(options.defaultSort?.direction || 'asc')
+  const customFilters = ref<Record<string, any>>({})
 
   // Computed filters
   const filters = computed<PaginationFilters>(() => {
     const baseFilters: PaginationFilters = {
       page: currentPage.value,
       per_page: perPage.value,
-      search: search.value
+      search: search.value,
+      ...customFilters.value
     }
 
     // Add Laravel-style sorting: sort[column]=direction
@@ -78,12 +80,17 @@ export function usePagination<T = any>(
   }
 
   const setFilter = (key: string, value: any) => {
-    filters.value[key] = value
+    customFilters.value[key] = value
     currentPage.value = 1
   }
 
   const removeFilter = (key: string) => {
-    delete filters.value[key]
+    delete customFilters.value[key]
+    currentPage.value = 1
+  }
+
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    customFilters.value = { ...newFilters }
     currentPage.value = 1
   }
 
@@ -93,6 +100,7 @@ export function usePagination<T = any>(
     search.value = options.defaultSearch || ''
     sortBy.value = options.defaultSort?.column || null
     sortDirection.value = options.defaultSort?.direction || 'asc'
+    customFilters.value = {}
   }
 
   // Watch search with debounce
@@ -123,6 +131,7 @@ export function usePagination<T = any>(
     sortBy,
     sortDirection,
     filters,
+    customFilters,
 
     // Query result
     ...queryResult,
@@ -136,6 +145,7 @@ export function usePagination<T = any>(
     handlePerPageChange,
     handleSearchChange,
     handleSortChange,
+    handleFilterChange,
     resetFilters,
     setFilter,
     removeFilter,
