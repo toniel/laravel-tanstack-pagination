@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-05-30
+
+### Fixed
+- Fixed debounce not working — search query now properly debounced before triggering refetch
+- Fixed `removeFilter` not triggering Vue reactivity (used `delete` on ref object)
+- Fixed `LaravelPaginationResponse.links` type to match actual Laravel response (object, not array)
+- Fixed timer type mismatch (`number` vs `ReturnType<typeof setTimeout>`)
+- Fixed parameter shadowing in `getNumberingColumn`
+
+### Added
+- `onScopeDispose` cleanup for search debounce timeout (prevents memory leaks)
+- `keepPreviousData` as default `placeholderData` (no flash of empty table on page change)
+- Page validation: `handlePageChange` now clamps to `1..last_page`
+- `handlePerPageChange` validates positive integer
+- Sort column name sanitization (rejects special characters to prevent parameter injection)
+- Configurable `debounceMs` option (default: 300)
+- `currentPerPage` alias in return values
+
+### Changed
+- Removed hardcoded project-specific className from `useTableNumbering` (now defaults to empty string)
+
 ## [0.1.2] - 2026-04-08
 
 ### Fixed
@@ -69,6 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Laravel backend setup guide
 - TypeScript type definitions
 
-[Unreleased]: https://github.com/toniel/laravel-tanstack-pagination/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/toniel/laravel-tanstack-pagination/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/toniel/laravel-tanstack-pagination/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/toniel/laravel-tanstack-pagination/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/toniel/laravel-tanstack-pagination/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/toniel/laravel-tanstack-pagination/releases/tag/v0.1.0

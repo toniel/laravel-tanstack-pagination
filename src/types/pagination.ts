@@ -1,11 +1,11 @@
 export type LaravelPaginationResponse<T = any> = {
   data: T[]
-  links: Array<{
+  links: {
     first: string | null
     last: string | null
     next: string | null
     prev: string | null
-  }>
+  }
   meta: {
     current_page: number
     from: number
