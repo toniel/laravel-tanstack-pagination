@@ -24,7 +24,7 @@ export function useTableNumbering() {
   ) => {
     const {
       header = 'No.',
-      className = 'text-center text-ubd-ocean-700 dark:text-ubd-ocean-200 font-medium',
+      className = '',
       width = '60px',
       enableSorting = false
     } = options

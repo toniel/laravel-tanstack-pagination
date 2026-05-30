@@ -1,8 +1,7 @@
-
 import { useTableNumbering } from './useTableNumbering'
 import type { LaravelPaginationResponse, PaginationFilters, SortState } from '../types/pagination'
-import { useQuery, type UseQueryOptions } from '@tanstack/vue-query'
-import { computed, ref, watch } from 'vue'
+import { useQuery, keepPreviousData, type UseQueryOptions } from '@tanstack/vue-query'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
 export interface UsePaginationOptions<T>
   extends Omit<UseQueryOptions<LaravelPaginationResponse<T>>, 'queryKey' | 'queryFn'> {
@@ -10,7 +9,11 @@ export interface UsePaginationOptions<T>
   defaultPerPage?: number
   defaultSearch?: string
   defaultSort?: SortState
+  debounceMs?: number
 }
+
+// Only allow alphanumeric, underscores, dots for sort column names
+const VALID_SORT_COLUMN = /^[a-zA-Z0-9_.]+$/
 
 export function usePagination<T = any>(
   fetchFn: (filters: PaginationFilters) => Promise<LaravelPaginationResponse<T>>,
@@ -20,31 +23,44 @@ export function usePagination<T = any>(
   const currentPage = ref(1)
   const perPage = ref(options.defaultPerPage || 10)
   const search = ref(options.defaultSearch || '')
-  const sortBy = ref(options.defaultSort?.column || null)
+  const debouncedSearch = ref(options.defaultSearch || '')
+  const sortBy = ref<string | null>(options.defaultSort?.column || null)
   const sortDirection = ref<'asc' | 'desc'>(options.defaultSort?.direction || 'asc')
   const customFilters = ref<Record<string, any>>({})
+
+  // Debounce search
+  let searchTimeout: ReturnType<typeof setTimeout>
+  watch(search, (newValue) => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+      debouncedSearch.value = newValue
+      currentPage.value = 1
+    }, options.debounceMs ?? 300)
+  })
+  onScopeDispose(() => clearTimeout(searchTimeout))
 
   // Computed filters
   const filters = computed<PaginationFilters>(() => {
     const baseFilters: PaginationFilters = {
       page: currentPage.value,
       per_page: perPage.value,
-      search: search.value,
+      search: debouncedSearch.value,
       ...customFilters.value
     }
 
-    // Add Laravel-style sorting: sort[column]=direction
-    if (sortBy.value) {
+    if (sortBy.value && VALID_SORT_COLUMN.test(sortBy.value)) {
       baseFilters[`sort[${sortBy.value}]`] = sortDirection.value
     }
 
     return baseFilters
   })
+
   // Query
   const queryResult = useQuery({
     ...options,
     queryKey: [options.queryKey, filters],
     queryFn: () => fetchFn(filters.value),
+    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false
   })
 
@@ -54,38 +70,39 @@ export function usePagination<T = any>(
 
   // Actions
   const handlePageChange = (page: number) => {
-    currentPage.value = page
+    const lastPage = pagination.value?.meta?.last_page ?? Infinity
+    currentPage.value = Math.min(Math.max(1, Math.floor(page)), lastPage)
   }
 
   const handlePerPageChange = (newPerPage: number) => {
-    perPage.value = newPerPage
-    currentPage.value = 1 // Reset to first page when changing per page
+    perPage.value = Math.max(1, Math.floor(newPerPage))
+    currentPage.value = 1
   }
 
   const handleSearchChange = (newSearch: string) => {
     search.value = newSearch
-    currentPage.value = 1 // Reset to first page when searching
   }
 
   const handleSortChange = (column: string) => {
+    if (!VALID_SORT_COLUMN.test(column)) return
+
     if (sortBy.value === column) {
-      // Toggle direction if same column
       sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
     } else {
-      // New column, default to asc
       sortBy.value = column
       sortDirection.value = 'asc'
     }
-    currentPage.value = 1 // Reset to first page when sorting
+    currentPage.value = 1
   }
 
   const setFilter = (key: string, value: any) => {
-    customFilters.value[key] = value
+    customFilters.value = { ...customFilters.value, [key]: value }
     currentPage.value = 1
   }
 
   const removeFilter = (key: string) => {
-    delete customFilters.value[key]
+    const { [key]: _, ...rest } = customFilters.value
+    customFilters.value = rest
     currentPage.value = 1
   }
 
@@ -98,35 +115,23 @@ export function usePagination<T = any>(
     currentPage.value = 1
     perPage.value = options.defaultPerPage || 10
     search.value = options.defaultSearch || ''
+    debouncedSearch.value = options.defaultSearch || ''
     sortBy.value = options.defaultSort?.column || null
     sortDirection.value = options.defaultSort?.direction || 'asc'
     customFilters.value = {}
   }
 
-  // Watch search with debounce
-  let searchTimeout: number
-  watch(search, () => {
-    clearTimeout(searchTimeout)
-    searchTimeout = window.setTimeout(() => {
-      currentPage.value = 1
-    }, 300)
-  })
-
   const { createNumberingColumn } = useTableNumbering()
 
-  /**
-   * Creates a numbering column with current pagination context
-   * @param options - Optional configuration for the column
-   * @returns Column definition object
-   */
-  const getNumberingColumn = (options: any = {}) => {
-    return createNumberingColumn(pagination, perPage, options)
+  const getNumberingColumn = (columnOptions: any = {}) => {
+    return createNumberingColumn(pagination, perPage, columnOptions)
   }
 
   return {
     // State
     currentPage,
     perPage,
+    currentPerPage: perPage,
     search,
     sortBy,
     sortDirection,
